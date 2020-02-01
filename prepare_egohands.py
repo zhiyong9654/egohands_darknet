@@ -2,24 +2,25 @@
 
 
 from pathlib import Path
-import shutil
 import scipy.io as sio
 import numpy as np
 import cv2
 import argparse
 
-def prepare_darknet_label_and_image(image_path, polygons_per_image, output_dir):
+def prepare_darknet_label_and_image(image_path, polygons_per_image, output_dir, resized_dim):
     """Function that takes in an image path, polygons for that image, and a desired output directory.
     Loads the image to determine width and height information,
     iterates over every polygon (every hand), and determines the min/max X, Y coordinates,
     converts those min max XY values into relative values as needed by Darknet,
-    and determines a unique filename so that all the files can be placed together for easier processing.
+    determines a unique filename so that all the files can be placed together for easier processing,
+    resizes the image and saves it.
 
     Args:
         image_path (pathlib.Path): Contains the path to the desired image to process.
         polygons_per_image (list of np.array): Contains multiple polygons, each polygon corresponds to
                                                one hand's worth of coordinates.
         output_dir (pathlib.Path): Contains the path to the desired output directory.
+        resized_dim (tuple): Width, height. Determines the new size of the image. E.g. (608, 608)
 
     Returns:
         None
@@ -84,13 +85,15 @@ def prepare_darknet_label_and_image(image_path, polygons_per_image, output_dir):
     output_image_path = Path(output_dir).joinpath(Path(unique_filename + '.jpg'))
     print(label_path, output_image_path)
 
-    # cp image to new location and save label txt file to the same place
-    shutil.copy(image_path, output_image_path)
+    # resize image and save to new location and save label txt file to the same place
+    img = cv2.imread(str(image_path))
+    resized_img = cv2.resize(img, resized_dim)
+    cv2.imwrite(str(output_image_path), resized_img)
     with open(label_path, 'w') as f:
         f.write(label)
 
 
-def prepare_egohands(egohands_path, output_dir):
+def prepare_egohands(egohands_path, output_dir, resized_dim):
     output_dir = Path(output_dir)
     output_dir.mkdir()
     p = Path(egohands_path).joinpath('_LABELLED_SAMPLES')
@@ -101,14 +104,16 @@ def prepare_egohands(egohands_path, output_dir):
         # load all polygons for every image
         all_polygons = sio.loadmat(next(scene_path.glob('*.mat')))['polygons'][0]
         for i, image_path in enumerate(images_per_scene):
-            prepare_darknet_label_and_image(image_path, list(all_polygons[i]), output_dir)
+            prepare_darknet_label_and_image(image_path, list(all_polygons[i]), output_dir, resized_dim)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Egohands preparation script for Darknet.')
     parser.add_argument('egohands_path', type=str,
             help='Path to unzipped egohands directory.')
+    parser.add_argument('--resized_dim', type=tuple, default=(608,608),
+            help='(width, height) of resized image.')
     parser.add_argument('--output_dir', type=str, default='egohands_prepared',
             help="Path to store renamed egohands images and labels, defaults to 'egohands_prepared'.")
     args = parser.parse_args()
-    prepare_egohands(args.egohands_path, args.output_dir)
+    prepare_egohands(args.egohands_path, args.output_dir, args.resized_dim)
