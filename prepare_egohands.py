@@ -8,9 +8,30 @@ import cv2
 import argparse
 
 def prepare_darknet_label_and_image(image_path, polygons_per_image, output_dir):
-    # darknet expects a txt label file with relative coords of bounding boxes.
-    # It also expects the img file to share the same name as the txt file.
+    """Function that takes in an image path, polygons for that image, and a desired output directory.
+    Loads the image to determine width and height information,
+    iterates over every polygon (every hand), and determines the min/max X, Y coordinates,
+    converts those min max XY values into relative values as needed by Darknet,
+    and determines a unique filename so that all the files can be placed together for easier processing.
+
+    Args:
+        image_path (pathlib.Path): Contains the path to the desired image to process.
+        polygons_per_image (list of np.array): Contains multiple polygons, each polygon corresponds to
+                                               one hand's worth of coordinates.
+        output_dir (pathlib.Path): Contains the path to the desired output directory.
+    
+    Returns:
+        None
+    """
     def generate_unique_filename(image_path):
+        """Generates a unique filename from egohands dataset by concatenating the scnene name and filename.
+
+        Args:
+           image_path (pathlib.Path): Contains the path to the desired image to process.
+
+        Returns:
+            unique_filename (str): Unique filename, e.g. CARDS_COURTYARD_T_B_frame_1849
+        """
         unique_filename = f"{image_path.parent.name}_{image_path.stem}"
         return unique_filename
 
@@ -21,18 +42,25 @@ def prepare_darknet_label_and_image(image_path, polygons_per_image, output_dir):
         return x_min, x_max, y_min, y_max
 
     def convert_minmax_to_darknet(x_min, x_max, y_min, y_max, img_width, img_height):
-        # Darknet expects <class> <x_center> <y_center> <width> <height>, where all values are relative.
-        # e.g. 0.716797 0.395833 0.216406 0.147222
-        # Reference: https://github.com/AlexeyAB/darknet#how-to-train-to-detect-your-custom-objects
+        """Convert min/max X Y values of the polygons to relative values of the img dimensions.
+        Darknet expects <class> <x_center> <y_center> <width> <height>, where all values are relative.
+        e.g. 0.716797 0.395833 0.216406 0.147222
+        Reference: https://github.com/AlexeyAB/darknet#how-to-train-to-detect-your-custom-objects
+
+        Args:
+            x_min, x_max, y_min, y_max (int): Coordinates corresponding to the edges of the polygon.
+            img_width, img_height (int): Image dimensions.
+
+        Returns:
+            (str): One line that represents a bounding box in darknet format, and the expected class.
+                   For egohands, there is only 1 class, hence the class number is 0.
+        """
         rec_x_center_rel = ((x_max - x_min)/2 + x_min)/img_width
         rec_y_center_rel = ((y_max - y_min)/2 + y_min)/img_height
         rec_width_rel = (x_max - x_min)/img_width
         rec_height_rel = (y_max - y_min)/img_height
-        # There's only one class in the egohands dataset, therefore class is 0.
         return f'0 {rec_x_center_rel} {rec_y_center_rel} {rec_width_rel} {rec_height_rel}'
 
-    
-    # load image to get height and width data. CV2 can only load a string.
     img = cv2.imread(str(image_path))
     # generate bounding boxes info - labels in darknet format, note that an image can have multiple polygons (multiple hands)
     label = []
@@ -45,6 +73,7 @@ def prepare_darknet_label_and_image(image_path, polygons_per_image, output_dir):
             cv2.imshow('verification_window', image_to_verify)
             cv2.waitKey(2)
         except ValueError:
+            # some polygons are empty, not sure why, as I'm not familiar with .mat files.
             print(f'{image_path} has an empty polygon')
     label = '\n'.join(label)
     
