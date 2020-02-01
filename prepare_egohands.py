@@ -1,5 +1,6 @@
 #! /bin/python3
 
+
 from pathlib import Path
 import shutil
 import scipy.io as sio
@@ -19,7 +20,7 @@ def prepare_darknet_label_and_image(image_path, polygons_per_image, output_dir):
         polygons_per_image (list of np.array): Contains multiple polygons, each polygon corresponds to
                                                one hand's worth of coordinates.
         output_dir (pathlib.Path): Contains the path to the desired output directory.
-    
+
     Returns:
         None
     """
@@ -76,7 +77,7 @@ def prepare_darknet_label_and_image(image_path, polygons_per_image, output_dir):
             # some polygons are empty, not sure why, as I'm not familiar with .mat files.
             print(f'{image_path} has an empty polygon')
     label = '\n'.join(label)
-    
+
     # determine output file location
     unique_filename = generate_unique_filename(image_path)
     label_path = Path(output_dir).joinpath(Path(unique_filename + '.txt'))
@@ -87,8 +88,8 @@ def prepare_darknet_label_and_image(image_path, polygons_per_image, output_dir):
     shutil.copy(image_path, output_image_path)
     with open(label_path, 'w') as f:
         f.write(label)
-    
-    
+
+
 def prepare_egohands(egohands_path, output_dir):
     output_dir = Path(output_dir)
     output_dir.mkdir()
@@ -102,11 +103,12 @@ def prepare_egohands(egohands_path, output_dir):
         for i, image_path in enumerate(images_per_scene):
             prepare_darknet_label_and_image(image_path, list(all_polygons[i]), output_dir)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Egohands preparation script for Darknet.')
-    parser.add_argument('egohands_path', type=str, 
+    parser.add_argument('egohands_path', type=str,
             help='Path to unzipped egohands directory.')
-    parser.add_argument('--output_dir', type=str, default='egohands_prepared', 
+    parser.add_argument('--output_dir', type=str, default='egohands_prepared',
             help="Path to store renamed egohands images and labels, defaults to 'egohands_prepared'.")
     args = parser.parse_args()
     prepare_egohands(args.egohands_path, args.output_dir)
