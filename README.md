@@ -1,11 +1,11 @@
 # What is this repository?
 It contains helper scripts for using the egohands dataset on Darknet for hand recognition training.  
 
-|---|---|---|  
-|Script|Purpose|Arguments|  
+|---|---|---|
+|Script|Purpose|Arguments|
 |prepare_egohands.py|Converts the polygons of the egohands dataset into the 'object-class x_center y_center width height' that's needed by darknet. E.g. 0 0.3215 0.8218 0.072 0.1006| path to egohands directory, resolution and output directory|
-|generate_train_test.py|Darknet requires a train.txt and test.txt each containing lines of relative file paths pointing to the image that is part of train/test. This script generates these 2 files.|Relative path from darknet executable to prepared egohands images, seed and percentage of training data.|  
-
+|generate_train_test.py|Darknet requires a train.txt and test.txt each containing lines of relative file paths pointing to the image that is part of train/test. This script generates these 2 files.|Relative path from darknet executable to prepared egohands images, seed and percentage of training data.|
+  
 
 
 # How to use
